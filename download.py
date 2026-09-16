@@ -8,7 +8,8 @@ import stat
 
 import requests
 
-PLATFORM = "mac-x64"
+PLATFORMS = ["linux64", "mac-arm64", "mac-x64", "win32", "win64"]
+PLATFORM = PLATFORMS[2]
 
 ### Consts used in the retrieval of the Chrome version number
 CHROME_PLIST_PATH = "/Applications/Google Chrome.app/Contents/Info.plist"
@@ -23,11 +24,18 @@ def parse_args() -> list[str]:
     """
     Parses the args passed to this file
     """
+    global DEBUG
+    global DRY_RUN
+    global PLATFORM
+
     dest_dir = os.getcwd()  # default
 
+    found_platform = False
+
     args = sys.argv[1:]
-    for arg in args:
-        arg = arg.strip()
+    i = 0
+    while i < len(args):
+        arg = args[i].strip()
         lower = arg.lower()
 
         # dest_dir check
@@ -36,14 +44,29 @@ def parse_args() -> list[str]:
 
         # DEBUG check
         if lower == "--debug":
-            global DEBUG
             DEBUG = True
             print(os.linesep, "Raw args:", args, os.linesep)
 
         # DRY_RUN check
         if lower == "--dry-run":
-            global DRY_RUN
             DRY_RUN = True
+
+        # PLATFORM check
+        if lower == "--platform":
+            found_platform = True
+            i += 1
+            PLATFORM = args[i].strip().lower()
+        if lower.startswith("--platform="):
+            found_platform = True
+            PLATFORM = lower.replace("--platform=", "")
+        if found_platform:
+            # validate
+            if PLATFORM not in PLATFORMS:
+                raise Exception(
+                    f"Invalid platform '{PLATFORM}'. Must be one of {PLATFORMS}"
+                )
+
+        i += 1
 
     return [dest_dir]
 
@@ -283,7 +306,9 @@ def download(dest_dir: str) -> str:
     """
 
     if DRY_RUN:
-        print("(DRY_RUN mode enabled)")
+        print("(DRY_RUN mode enabled)", os.linesep)
+
+    print("Platform:", PLATFORM, os.linesep)
 
     print("Getting chrome version...")
     version = get_chrome_version()
