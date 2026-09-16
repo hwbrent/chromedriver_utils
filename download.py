@@ -47,7 +47,7 @@ def parse_args() -> list[str]:
         # DEBUG check
         if lower == "--debug":
             DEBUG = True
-            print(os.linesep + "Raw args:", args, os.linesep)
+            print(os.linesep + "Raw args:", *args, os.linesep)
 
         # DRY_RUN check
         if lower == "--dry-run":
