@@ -248,20 +248,21 @@ def amend_permission(dest_dir: str) -> None:
     path = os.path.join(dest_dir, "chromedriver")
 
     if DEBUG:
-        permission_mask_before = oct(os.stat(path).st_mode)[-3:]
+        get_permission_mask = lambda: oct(os.stat(path).st_mode)[-3:]
+        mask_before = get_permission_mask()
 
     # Change the permission of the file to be executable
     os.chmod(path, stat.S_IRWXU)
 
     if DEBUG:
-        permission_mask_after = oct(os.stat(path).st_mode)[-3:]
+        mask_after = get_permission_mask()
         print(
             LOG_INDENT + "Permission for",
             path,
             "changed from",
-            permission_mask_before,
+            mask_before,
             "to",
-            permission_mask_after,
+            mask_after,
         )
 
 
