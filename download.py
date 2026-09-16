@@ -254,8 +254,6 @@ def amend_permission(dest_dir: str) -> None:
             permission_mask_after,
         )
 
-    os.chmod
-
 
 def download(dest_dir: str) -> str:
     """
