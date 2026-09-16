@@ -9,7 +9,7 @@ import stat
 import requests
 
 PLATFORMS = ["linux64", "mac-arm64", "mac-x64", "win32", "win64"]
-PLATFORM = PLATFORMS[2]
+PLATFORM = PLATFORMS[1]
 
 ### Consts used in the retrieval of the Chrome version number
 CHROME_PLIST_PATH = "/Applications/Google Chrome.app/Contents/Info.plist"
