@@ -9,7 +9,6 @@ import stat
 import requests
 
 PLATFORMS = ["linux64", "mac-arm64", "mac-x64", "win32", "win64"]
-PLATFORM = PLATFORMS[1]
 
 ### Consts used in the retrieval of the Chrome version number
 CHROME_PLIST_PATH = os.path.join(
@@ -28,9 +27,10 @@ def parse_args() -> list[str]:
     """
     global DEBUG
     global DRY_RUN
-    global PLATFORM
 
-    dest_dir = os.getcwd()  # default
+    # arg values, initialised to default values
+    dest_dir = os.getcwd()
+    platform = PLATFORMS[1]
 
     found_platform = False
 
@@ -53,24 +53,23 @@ def parse_args() -> list[str]:
         if lower == "--dry-run":
             DRY_RUN = True
 
-        # PLATFORM check
+        # platform check
         if lower == "--platform":
             found_platform = True
             i += 1
-            PLATFORM = args[i].strip().lower()
+            platform = args[i].strip().lower()
         if lower.startswith("--platform="):
             found_platform = True
-            PLATFORM = lower.replace("--platform=", "")
+            platform = lower.replace("--platform=", "")
         if found_platform:
-            # validate
-            if PLATFORM not in PLATFORMS:
+            if platform not in PLATFORMS:
                 raise Exception(
-                    f"Invalid platform '{PLATFORM}'. Must be one of {PLATFORMS}"
+                    f"Invalid platform '{platform}'. Must be one of {PLATFORMS}"
                 )
 
         i += 1
 
-    return [dest_dir]
+    return [dest_dir, platform]
 
 
 def get_chrome_version() -> str:
@@ -128,16 +127,16 @@ def get_chrome_version() -> str:
     raise Exception("Didn't find version value for some reason :(")
 
 
-def get_chromedriver_download_url(our_version: str) -> str:
+def get_chromedriver_download_url(our_version: str, platform: str) -> str:
     """
-    Given the version of our Chrome download, this function gets the url of
-    the chromedriver download
+    Given the version of our Chrome download, and the current platform,
+    this function gets the url of the chromedriver download
 
     Basically, we look for the download with the version number which is the
     most similar to our Chrome download's version number. Idk how robust
     this is, but it's all I could think of doing
 
-    >>> get_chromedriver_download_url("125.0.6422.113")
+    >>> get_chromedriver_download_url("125.0.6422.113", "mac-x64")
     "https://storage.googleapis.com/chrome-for-testing-public/125.0.6422.3/mac-x64/chromedriver-mac-x64.zip"
     """
 
@@ -188,8 +187,8 @@ def get_chromedriver_download_url(our_version: str) -> str:
     # Obviously the only one we care about is mac-x64, so we just grab that
     # data, and return the "url" property in the dict
     platforms = most_similar["downloads"]["chromedriver"]
-    platform = next(entry for entry in platforms if entry["platform"] == PLATFORM)
-    url = platform["url"]
+    platform_data = next(entry for entry in platforms if entry["platform"] == platform)
+    url = platform_data["url"]
 
     if DEBUG:
         print(LOG_INDENT + "Download URL:", url)
@@ -247,7 +246,10 @@ def download_chromedriver(url: str, dest_dir: str) -> str:
         # The previous operation creates a new directory called 'chromedriver-'
         # plus the platform name. It contains the chromedriver executable, as
         # well as a LICENSE.chromedriver file
-        unzipped_dir = os.path.join(dest_dir, "chromedriver-" + PLATFORM)
+        unzipped_dir_name = next(
+            name for name in os.listdir(dest_dir) if name.startswith("chromedriver-")
+        )
+        unzipped_dir = os.path.join(dest_dir, unzipped_dir_name)
 
         ### Move 'chromedriver' to the root of the project ###
         chromedriver_src_path = os.path.join(unzipped_dir, "chromedriver")
@@ -293,11 +295,11 @@ def amend_permission(dest_dir: str) -> None:
         )
 
 
-def download(dest_dir: str) -> str:
+def download(dest_dir: str, platform: str) -> str:
     """
     Given the desired destination directory of the resulting `chromedriver`
-    exexutable (`dest_dir`), which defaults to the root of this project,
-    this function does the following:
+    exexutable (`dest_dir`), which defaults to the root of this project, and
+    the platform of the current machine, this function does the following:
 
     - Finds the current Chrome version - `get_chrome_version`
     - Gets the corresponding chromedriver download URL - `get_chromedriver_download_url`
@@ -310,14 +312,14 @@ def download(dest_dir: str) -> str:
     if DRY_RUN:
         print("(DRY_RUN mode enabled)", os.linesep)
 
-    print("Platform:", PLATFORM, os.linesep)
+    print("Platform:", platform, os.linesep)
 
     print("Getting chrome version...")
     version = get_chrome_version()
     print("Done!", os.linesep)
 
     print("Getting chromedriver download url...")
-    url = get_chromedriver_download_url(version)
+    url = get_chromedriver_download_url(version, platform)
     print("Done!", os.linesep)
 
     print("Downloading chromedriver from url...")
@@ -341,10 +343,10 @@ def main() -> None:
     """
 
     args = parse_args()
-    dest_dir = args[0]
+    dest_dir, platform = args
 
     # Do the downloading
-    download(dest_dir)
+    download(dest_dir, platform)
 
 
 if __name__ == "__main__":
