@@ -14,6 +14,9 @@ PLATFORM = "mac-x64"
 CHROME_PLIST_PATH = "/Applications/Google Chrome.app/Contents/Info.plist"
 XML_VERSION_KEY = "KSVersion"
 
+DEBUG = True
+LOG_INDENT = "  "
+
 
 def get_chrome_version() -> str:
     """
@@ -61,6 +64,10 @@ def get_chrome_version() -> str:
         # We're now inspecting the <string> tag which will contain the version
         # value. This means 'inner_text' will be the info we want
         else:
+
+            if DEBUG:
+                print(LOG_INDENT + "Found version value:", inner_text)
+
             return inner_text
 
     raise Exception("Didn't find version value for some reason :(")
@@ -128,6 +135,10 @@ def get_chromedriver_download_url(our_version: str) -> str:
     platforms = most_similar["downloads"]["chromedriver"]
     platform = next(entry for entry in platforms if entry["platform"] == PLATFORM)
     url = platform["url"]
+
+    if DEBUG:
+        print(LOG_INDENT + "Download URL:", url)
+
     return url
 
 
@@ -158,6 +169,16 @@ def download_chromedriver(url: str, dest_dir: str) -> str:
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:  # filter out keep-alive new chunks
                     file.write(chunk)
+
+    if DEBUG:
+        size = os.path.getsize(zip_path)
+        print(
+            LOG_INDENT + "Downloaded .zip file:",
+            zip_path,
+            "of size",
+            size,
+            "bytes",
+        )
 
     ### Extract the .zip file ###
     with ZipFile(zip_path, "r") as zip_ref:
@@ -193,8 +214,24 @@ def amend_permission(dest_dir: str) -> None:
     # The path of the chromedriver executable
     path = os.path.join(dest_dir, "chromedriver")
 
+    if DEBUG:
+        permission_mask_before = oct(os.stat(path).st_mode)[-3:]
+
     # Change the permission of the file to be executable
     os.chmod(path, stat.S_IRWXU)
+
+    if DEBUG:
+        permission_mask_after = oct(os.stat(path).st_mode)[-3:]
+        print(
+            LOG_INDENT + "Permission for",
+            path,
+            "changed from",
+            permission_mask_before,
+            "to",
+            permission_mask_after,
+        )
+
+    os.chmod
 
 
 def download(dest_dir: str) -> str:
@@ -210,10 +247,24 @@ def download(dest_dir: str) -> str:
 
     And returns the path of the downloaded `chromedriver` executable
     """
+    print("Getting chrome version...")
     version = get_chrome_version()
+    print("Done!", os.linesep)
+
+    print("Getting chromedriver download url...")
     url = get_chromedriver_download_url(version)
+    print("Done!", os.linesep)
+
+    print("Downloading chromedriver from url...")
     filepath = download_chromedriver(url, dest_dir)
+    print("Done!", os.linesep)
+
+    print("Amending chromedriver permissions...")
     amend_permission(dest_dir)
+    print("Done!", os.linesep)
+
+    print("Downloaded chromedriver to:")
+    print(filepath)
 
     return filepath
 
@@ -221,7 +272,7 @@ def download(dest_dir: str) -> str:
 def main() -> None:
     """
     If this file is executed, this function is called; basically the whole
-    downloading process is carried out, and the chromedriver path is printed
+    downloading process is carried out
     """
 
     # Check the arguments to this file; if one was provided, use that as
@@ -230,9 +281,8 @@ def main() -> None:
     args = sys.argv[1:]
     dest_dir = os.getcwd() if len(args) == 0 else args[0]
 
-    # Do the downloading, and print the path
-    resulting_filepath = download(dest_dir)
-    print(resulting_filepath)
+    # Do the downloading
+    download(dest_dir)
 
 
 if __name__ == "__main__":
