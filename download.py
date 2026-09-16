@@ -166,7 +166,7 @@ def download_chromedriver(url: str, dest_dir: str) -> str:
     # The previous operation creates a new directory called 'chromedriver-'
     # plus the platform name. It contains the chromedriver executable, as
     # well as a LICENSE.chromedriver file
-    unzipped_dir = os.path.join(dest_dir, "chromedriver-mac-x64")
+    unzipped_dir = os.path.join(dest_dir, "chromedriver-" + PLATFORM)
 
     ### Move 'chromedriver' to the root of the project ###
     chromedriver_src_path = os.path.join(unzipped_dir, "chromedriver")
