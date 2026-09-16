@@ -15,6 +15,7 @@ CHROME_PLIST_PATH = "/Applications/Google Chrome.app/Contents/Info.plist"
 XML_VERSION_KEY = "KSVersion"
 
 DEBUG = False
+DRY_RUN = False
 LOG_INDENT = "  "
 
 
@@ -34,9 +35,13 @@ def parse_args() -> list[str]:
             dest_dir = arg
 
         # DEBUG check
-        if lower in ["-d", "--debug"]:
+        if lower == "--debug":
             global DEBUG
             DEBUG = True
+
+        if lower == "--dry-run":
+            global DRY_RUN
+            DRY_RUN = True
 
     return [dest_dir]
 
@@ -179,49 +184,51 @@ def download_chromedriver(url: str, dest_dir: str) -> str:
 
     And returns the filepath of the `chromedriver` executable
     """
-    ### Download the .zip file ###
-
-    # Get the full path for the zip
-    zip_name = "chromedriver.zip"
-    zip_path = os.path.join(dest_dir, zip_name)
-
-    # Cheers ChatGPT
-    with requests.get(url, stream=True) as response:
-        response.raise_for_status()
-        with open(zip_path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:  # filter out keep-alive new chunks
-                    file.write(chunk)
-
-    if DEBUG:
-        size = os.path.getsize(zip_path)
-        print(
-            LOG_INDENT + "Downloaded .zip file:",
-            zip_path,
-            "of size",
-            size,
-            "bytes",
-        )
-
-    ### Extract the .zip file ###
-    with ZipFile(zip_path, "r") as zip_ref:
-        zip_ref.extractall(dest_dir)
-
-    # The previous operation creates a new directory called 'chromedriver-'
-    # plus the platform name. It contains the chromedriver executable, as
-    # well as a LICENSE.chromedriver file
-    unzipped_dir = os.path.join(dest_dir, "chromedriver-" + PLATFORM)
-
-    ### Move 'chromedriver' to the root of the project ###
-    chromedriver_src_path = os.path.join(unzipped_dir, "chromedriver")
     chromedriver_dest_path = os.path.abspath(
         os.path.join(dest_dir, "chromedriver"),
     )
-    shutil.move(chromedriver_src_path, chromedriver_dest_path)
 
-    ### Clean up .zip and the unzipped directory ###
-    os.remove(zip_path)
-    shutil.rmtree(unzipped_dir)
+    if not DRY_RUN:
+        ### Download the .zip file ###
+
+        # Get the full path for the zip
+        zip_name = "chromedriver.zip"
+        zip_path = os.path.join(dest_dir, zip_name)
+
+        # Cheers ChatGPT
+        with requests.get(url, stream=True) as response:
+            response.raise_for_status()
+            with open(zip_path, "wb") as file:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:  # filter out keep-alive new chunks
+                        file.write(chunk)
+
+        if DEBUG:
+            size = os.path.getsize(zip_path)
+            print(
+                LOG_INDENT + "Downloaded .zip file:",
+                zip_path,
+                "of size",
+                size,
+                "bytes",
+            )
+
+        ### Extract the .zip file ###
+        with ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(dest_dir)
+
+        # The previous operation creates a new directory called 'chromedriver-'
+        # plus the platform name. It contains the chromedriver executable, as
+        # well as a LICENSE.chromedriver file
+        unzipped_dir = os.path.join(dest_dir, "chromedriver-" + PLATFORM)
+
+        ### Move 'chromedriver' to the root of the project ###
+        chromedriver_src_path = os.path.join(unzipped_dir, "chromedriver")
+        shutil.move(chromedriver_src_path, chromedriver_dest_path)
+
+        ### Clean up .zip and the unzipped directory ###
+        os.remove(zip_path)
+        shutil.rmtree(unzipped_dir)
 
     return chromedriver_dest_path
 
@@ -234,6 +241,9 @@ def amend_permission(dest_dir: str) -> None:
     It's the equivalent of entering this command into the terminal:
     `chmod +x ./chromedriver`
     """
+    if DRY_RUN:
+        return
+
     # The path of the chromedriver executable
     path = os.path.join(dest_dir, "chromedriver")
 
@@ -268,6 +278,10 @@ def download(dest_dir: str) -> str:
 
     And returns the path of the downloaded `chromedriver` executable
     """
+
+    if DRY_RUN:
+        print("(DRY_RUN mode enabled)")
+
     print("Getting chrome version...")
     version = get_chrome_version()
     print("Done!", os.linesep)
