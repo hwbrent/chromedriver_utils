@@ -18,6 +18,29 @@ DEBUG = False
 LOG_INDENT = "  "
 
 
+def parse_args() -> list[str]:
+    """
+    Parses the args passed to this file
+    """
+    dest_dir = os.getcwd()  # default
+
+    args = sys.argv[1:]
+    for arg in args:
+        arg = arg.strip()
+        lower = arg.lower()
+
+        # dest_dir check
+        if os.path.isdir(arg):
+            dest_dir = arg
+
+        # DEBUG check
+        if lower in ["-d", "--debug"]:
+            global DEBUG
+            DEBUG = True
+
+    return [dest_dir]
+
+
 def get_chrome_version() -> str:
     """
     This function dynamically inspects the package contents of our Chrome
@@ -275,11 +298,8 @@ def main() -> None:
     downloading process is carried out
     """
 
-    # Check the arguments to this file; if one was provided, use that as
-    # the destination
-    # Else, use the cwd
-    args = sys.argv[1:]
-    dest_dir = os.getcwd() if len(args) == 0 else args[0]
+    args = parse_args()
+    dest_dir = args[0]
 
     # Do the downloading
     download(dest_dir)
