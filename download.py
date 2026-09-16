@@ -14,7 +14,7 @@ PLATFORM = "mac-x64"
 CHROME_PLIST_PATH = "/Applications/Google Chrome.app/Contents/Info.plist"
 XML_VERSION_KEY = "KSVersion"
 
-DEBUG = True
+DEBUG = False
 LOG_INDENT = "  "
 
 
