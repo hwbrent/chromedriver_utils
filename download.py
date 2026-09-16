@@ -39,6 +39,7 @@ def parse_args() -> list[str]:
             global DEBUG
             DEBUG = True
 
+        # DRY_RUN check
         if lower == "--dry-run":
             global DRY_RUN
             DRY_RUN = True
