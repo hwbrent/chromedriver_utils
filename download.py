@@ -8,6 +8,8 @@ import stat
 
 import requests
 
+PLATFORM = "mac-x64"
+
 ### Consts used in the retrieval of the Chrome version number
 CHROME_PLIST_PATH = "/Applications/Google Chrome.app/Contents/Info.plist"
 XML_VERSION_KEY = "KSVersion"
@@ -124,8 +126,8 @@ def get_chromedriver_download_url(our_version: str) -> str:
     # Obviously the only one we care about is mac-x64, so we just grab that
     # data, and return the "url" property in the dict
     platforms = most_similar["downloads"]["chromedriver"]
-    mac_x64 = next(entry for entry in platforms if entry["platform"] == "mac-x64")
-    url = mac_x64["url"]
+    platform = next(entry for entry in platforms if entry["platform"] == PLATFORM)
+    url = platform["url"]
     return url
 
 
